@@ -1,81 +1,177 @@
-const { User } = require("../models");
-const fs = require("fs");
-const path = require("path");
-const user = require("../models/user");
+const { User } = require("../models"); // Import model User dari direktori models
+const fs = require("fs"); // Import modul fs untuk operasi sistem file
+const path = require("path"); // Import modul path untuk menangani dan mentransformasi jalur file
+const { v4: uuidv4 } = require("uuid"); // Import modul uuid dan gunakan versi 4 untuk menghasilkan pengenal unik
 
 class UserController {
+  // Mendefinisikan kelas UserController
   static async getUsers(req, res) {
+    // Mendefinisikan metode statis async untuk mendapatkan semua pengguna
     try {
       let users = await User.findAll({
-        order: [["id", "asc"]],
+        // Mengambil semua pengguna dari database
+        order: [["id", "asc"]], // Mengurutkan pengguna berdasarkan ID secara ascending
       });
-      //   res.render("users/brand", { users });
-      res.json(users);
+      //   res.render("users/brand", { users }); // Logika rendering untuk tampilan yang dikomentari
+      res.json(users); // Mengirimkan pengguna dalam format JSON sebagai respons
     } catch (err) {
-      res.send(err);
+      res.send(err); // Mengirimkan respons error jika pengambilan pengguna gagal
+    }
+  }
+
+  static async getUser(req, res) {
+    // Mendefinisikan metode statis async untuk mendapatkan pengguna berdasarkan ID
+    const id = +req.params.id; // Mengonversi parameter ID dari request menjadi angka
+    if (isNaN(id)) {
+      // Memeriksa apakah ID bukan angka
+      return res.status(400).send("Invalid ID"); // Mengirimkan respons status 400 dan pesan error
+    }
+    try {
+      let user = await User.findOne({
+        // Mengambil satu pengguna berdasarkan ID
+        where: {
+          id: id, // Kondisi untuk mencocokkan ID pengguna
+        },
+      });
+      res.json(user); // Mengirimkan pengguna dalam format JSON sebagai respons
+    } catch (err) {
+      res.send(err); // Typo: harusnya res.send(err) - Mengirimkan respons error jika pengambilan pengguna gagal
+    }
+  }
+
+  static async checkUsername(req, res) {
+    // Mendefinisikan metode statis async untuk memeriksa apakah username sudah ada
+    const { username } = req.body; // Mendestruktur username dari body request
+
+    try {
+      let user = await User.findOne({
+        // Mengambil pengguna berdasarkan username
+        where: { username: username }, // Kondisi untuk mencocokkan username
+      });
+
+      if (user) {
+        // Jika pengguna dengan username yang sama ditemukan
+        res.json({ exists: true }); // Mengirimkan objek JSON yang menunjukkan bahwa username sudah ada
+      } else {
+        res.json({ exists: false }); // Mengirimkan objek JSON yang menunjukkan bahwa username tidak ada
+      }
+    } catch (err) {
+      res.status(500).send("Internal Server Error"); // Mengirimkan status 500 dan pesan error jika terjadi kesalahan
     }
   }
 
   static async login(req, res) {
-    const { username, password } = req.body;
+    // Mendefinisikan metode statis async untuk menangani login pengguna
+    const { username, password } = req.body; // Mendestruktur username dan password dari body request
 
-    // Periksa apakah username dan password telah diberikan
     if (!username || !password) {
-      return res.status(400).send("Username and password are required.");
+      // Memeriksa apakah username atau password tidak ada
+      return res.status(400).send("Username and password are required."); // Mengirimkan status 400 dan pesan error
     }
 
     try {
-      // Cari pengguna berdasarkan username
       let user = await User.findOne({
-        where: { username: username },
+        // Mengambil pengguna berdasarkan username
+        where: { username: username }, // Kondisi untuk mencocokkan username
       });
 
       if (!user) {
-        return res.status(404).send("User not found.");
+        // Jika pengguna tidak ditemukan
+        return res.status(404).send("User not found."); // Mengirimkan status 404 dan pesan error
       }
 
-      // Periksa apakah password cocok
-      const passwordMatch = password === user.password;
+      const passwordMatch = password === user.password; // Memeriksa apakah password yang diberikan cocok dengan password yang disimpan
       if (!passwordMatch) {
-        return res.status(401).send("Incorrect password.");
+        // Jika password tidak cocok
+        return res.status(401).send("Incorrect password."); // Mengirimkan status 401 dan pesan error
       }
 
-      // Login berhasil, kirim data pengguna
-      res.send(user);
+      res.send(user); // Mengirimkan data pengguna jika login berhasil
     } catch (err) {
-      res.status(500).send("Internal Server Error");
+      res.status(500).send("Internal Server Error"); // Mengirimkan status 500 dan pesan error jika terjadi kesalahan
     }
   }
 
   static registerPage(req, res) {
-    res.render("users/formRegister");
+    // Mendefinisikan metode statis untuk merender halaman pendaftaran
+    res.render("users/formRegister"); // Merender tampilan formRegister
   }
 
   static async add(req, res) {
+    // Mendefinisikan metode statis async untuk menambahkan pengguna baru
     try {
-      const { username, password } = req.body;
-      const image = req.file;
-      let filePath = image ? image.filename : null;
+      const { username, password } = req.body; // Mendestruktur username dan password dari body request
+      const image = req.file; // Mendapatkan file yang diunggah dari request
+
+      const randomFileName = uuidv4(); // Menghasilkan nama file acak menggunakan UUID
+
+      const defaultImagePath = path.join(
+        // Mendefinisikan path ke gambar default
+        __dirname,
+        "..",
+        "public",
+        "assets",
+        "images",
+        "default.png"
+      );
+      const randomDefaultFileName = `default_${randomFileName}.png`; // Mendefinisikan nama file acak untuk gambar default
+
+      let filePath = image ? randomFileName : randomDefaultFileName; // Menetapkan path file berdasarkan apakah gambar diunggah atau tidak
+
+      if (!image) {
+        // Jika tidak ada gambar yang diunggah
+        fs.copyFileSync(
+          // Menyalin gambar default ke direktori pengguna dengan nama file acak
+          defaultImagePath,
+          path.join(
+            __dirname,
+            "..",
+            "public",
+            "assets",
+            "images",
+            "users",
+            randomDefaultFileName
+          )
+        );
+      } else {
+        // Jika gambar diunggah
+        const tempPath = image.path; // Mendapatkan path sementara dari gambar yang diunggah
+        const targetPath = path.join(
+          // Mendefinisikan path target untuk gambar yang diunggah
+          __dirname,
+          "..",
+          "public",
+          "assets",
+          "images",
+          "users",
+          randomFileName
+        );
+        fs.renameSync(tempPath, targetPath); // Mengganti nama (memindahkan) gambar yang diunggah ke path target
+      }
+
       let resultUser = await User.create({
+        // Membuat pengguna baru di database
         username,
         password,
-        image: filePath,
+        image: filePath, // Menetapkan path file gambar untuk pengguna
       });
-      res.redirect("/users");
+      // res.redirect("/users"); // Logika redirect yang dikomentari
+      res.json(resultUser); // Mengirimkan pengguna yang dibuat dalam format JSON sebagai respons
     } catch (err) {
-      res.send(err);
+      res.send(err); // Mengirimkan respons error jika pembuatan pengguna gagal
     }
   }
 
   static async delete(req, res) {
+    // Mendefinisikan metode statis async untuk menghapus pengguna
     try {
-      const id = +req.params.id;
-      const user = await User.findByPk(id);
+      const id = +req.params.id; // Mengonversi parameter ID dari request menjadi angka
+      const user = await User.findByPk(id); // Menemukan pengguna berdasarkan primary key
 
-      // Jika ada gambar, hapus gambar dan datanya
       if (user.image) {
-        // Dapatkan path file gambar
+        // Jika pengguna memiliki gambar
         const imagePath = path.join(
+          // Mendefinisikan path ke gambar pengguna
           __dirname,
           "..",
           "public",
@@ -85,56 +181,65 @@ class UserController {
           user.image
         );
 
-        // Hapus file gambar dari sistem file
         if (fs.existsSync(imagePath)) {
-          fs.unlinkSync(imagePath);
+          // Memeriksa apakah file gambar ada
+          fs.unlinkSync(imagePath); // Menghapus file gambar dari sistem file
         }
       }
 
-      // Hapus entri buah dari database
       let resultUser = await User.destroy({
+        // Menghapus pengguna dari database
         where: {
           id,
         },
       });
 
-      resultUser === 1
-        ? res.redirect("/users")
-        : res.send(`User with ID ${id} has not been deleted`);
+      resultUser === 1 // Memeriksa apakah penghapusan berhasil
+        ? res.redirect("/users") // Redirect ke halaman pengguna jika berhasil
+        : res.send(`User with ID ${id} has not been deleted`); // Mengirimkan pesan error jika tidak berhasil
     } catch (err) {
-      res.send(err);
+      res.send(err); // Mengirimkan respons error jika penghapusan pengguna gagal
     }
   }
 
   static updatePage(req, res) {
-    const id = +req.params.id;
+    // Mendefinisikan metode statis untuk merender halaman pembaruan pengguna
+    const id = +req.params.id; // Mengonversi parameter ID dari request menjadi angka
     if (isNaN(id)) {
-      return res.status(400).send("Invalid ID");
+      // Memeriksa apakah ID bukan angka
+      return res.status(400).send("Invalid ID"); // Mengirimkan respons status 400 dan pesan error
     }
     User.findOne({
+      // Menemukan pengguna berdasarkan ID
       where: {
-        id: id,
+        id: id, // Kondisi untuk mencocokkan ID pengguna
       },
     })
-      .then((users) => {
-        res.render("users/editUser", { users });
+      .then((user) => {
+        res.render("users/editUser", { user }); // Merender tampilan editUser dengan data pengguna
       })
       .catch((err) => {
-        res.send(err);
+        res.send(err); // Mengirimkan respons error jika pengambilan pengguna gagal
       });
   }
 
   static async update(req, res) {
+    // Mendefinisikan metode statis async untuk memperbarui pengguna
     try {
-      const id = +req.params.id;
-      const { username, password } = req.body;
+      const id = +req.params.id; // Mengonversi parameter ID dari request menjadi angka
+      const { username, password } = req.body; // Mendestruktur username dan password dari body request
       let imagePath;
 
       if (req.file) {
-        imagePath = req.file.filename;
-        const user = await User.findByPk(id);
+        // Jika file gambar diunggah
+        const randomFileName = uuidv4(); // Menghasilkan nama file acak menggunakan UUID
+        imagePath = `${randomFileName}.jpg`; // Mendefinisikan path file gambar baru
+
+        const user = await User.findByPk(id); // Menemukan pengguna berdasarkan primary key
         if (user.image) {
+          // Jika pengguna sudah memiliki gambar
           fs.unlinkSync(
+            // Menghapus file gambar lama
             path.join(
               __dirname,
               "..",
@@ -146,28 +251,37 @@ class UserController {
             )
           );
         }
-      } else {
-        const user = await User.findByPk(id);
-        imagePath = user.image; // Maintain the current image path
+
+        const tempPath = req.file.path; // Mendapatkan path sementara dari gambar yang diunggah
+        const targetPath = path.join(
+          // Mendefinisikan path target untuk gambar yang diunggah
+          __dirname,
+          "..",
+          "public",
+          "assets",
+          "images",
+          "users",
+          imagePath
+        );
+        fs.renameSync(tempPath, targetPath); // Mengganti nama (memindahkan) gambar yang diunggah ke path target
       }
 
-      let resultUser = await User.update(
+      let updatedUser = await User.update(
+        // Memperbarui data pengguna di database
         {
           username,
           password,
-          image: imagePath,
+          image: imagePath, // Menetapkan path file gambar untuk pengguna
         },
         {
-          where: {
-            id,
-          },
+          where: { id }, // Kondisi untuk mencocokkan ID pengguna
         }
       );
-      // res.redirect("/users");
-      res.send(resultUser);
+      res.json(updatedUser); // Mengirimkan pengguna yang diperbarui dalam format JSON sebagai respons
     } catch (err) {
-      res.send(err);
+      res.send(err); // Mengirimkan respons error jika pembaruan pengguna gagal
     }
   }
 }
-module.exports = UserController;
+
+module.exports = UserController; // Mengekspor kelas UserController

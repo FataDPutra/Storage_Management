@@ -1,18 +1,18 @@
-const route = require("express").Router();
-// const HomeController = require("../controllers/HomeController");
+const route = require("express").Router(); // Mengimpor modul Router dari Express
 
+// Endpoint sederhana untuk menyambut pengguna
 route.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-// route.get("/", HomeController.show);
+// Mengimpor rute-rute dari berbagai modul
+const userRoutes = require("./user"); // Mengimpor rute pengguna
+const categoryRoutes = require("./category"); // Mengimpor rute kategori
+const productRoutes = require("./product"); // Mengimpor rute produk
 
-const userRoutes = require("./user");
-const categoryRoutes = require("./category");
-const productRoutes = require("./product");
+// Menggunakan rute-rute yang telah diimpor
+route.use("/users", userRoutes); // Menggunakan rute pengguna di bawah endpoint '/users'
+route.use("/products", productRoutes); // Menggunakan rute produk di bawah endpoint '/products'
+route.use("/categories", categoryRoutes); // Menggunakan rute kategori di bawah endpoint '/categories'
 
-route.use("/users", userRoutes);
-route.use("/products", productRoutes);
-route.use("/categories", categoryRoutes);
-
-module.exports = route;
+module.exports = route; // Mengekspor router

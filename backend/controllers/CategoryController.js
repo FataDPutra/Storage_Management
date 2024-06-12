@@ -1,90 +1,132 @@
-const { Category } = require("../models");
+const { Category } = require("../models"); // Mengimpor model Category dari folder models
 
 class CategoryController {
+  // Mendefinisikan kelas CategoryController
   static async getCategories(req, res) {
+    // Metode statis untuk mendapatkan semua kategori
     try {
+      // Blok try untuk menangani eksekusi kode yang mungkin menghasilkan error
       let categories = await Category.findAll({
-        order: [["id", "asc"]],
+        // Mengambil semua kategori dari database
+        order: [["id", "asc"]], // Mengurutkan kategori berdasarkan id secara ascending
       });
-      //   res.render("categories/category", { categories });
-      res.json(categories);
+      res.json(categories); // Mengirimkan respon dalam format JSON berisi data kategori
     } catch (err) {
-      res.send(err);
+      // Blok catch untuk menangani error jika terjadi
+      res.send(err); // Mengirimkan error sebagai respon
     }
   }
 
   static addPage(req, res) {
-    res.render("categories/formCategory.ejs");
+    // Metode statis untuk menampilkan halaman formulir penambahan kategori
+    res.render("categories/formCategory.ejs"); // Merender halaman formCategory.ejs
+  }
+
+  static async getCategory(req, res) {
+    // Metode statis untuk mendapatkan kategori berdasarkan id
+    const id = +req.params.id; // Mendapatkan id dari parameter request dan mengubahnya menjadi tipe number
+    if (isNaN(id)) {
+      // Memeriksa apakah id adalah angka
+      return res.status(400).send("Invalid ID"); // Mengirimkan respon 400 jika id tidak valid
+    }
+    try {
+      // Blok try untuk menangani eksekusi kode yang mungkin menghasilkan error
+      let categories = await Category.findOne({
+        // Mencari satu kategori berdasarkan id
+        where: {
+          id: id, // Kondisi pencarian berdasarkan id
+        },
+      });
+      res.json(categories); // Mengirimkan respon dalam format JSON berisi data kategori
+    } catch (err) {
+      // Blok catch untuk menangani error jika terjadi
+      res.send(err); // Mengirimkan error sebagai respon
+    }
   }
 
   static async add(req, res) {
+    // Metode statis untuk menambahkan kategori baru
     try {
-      const { name } = req.body;
+      // Blok try untuk menangani eksekusi kode yang mungkin menghasilkan error
+      const { name } = req.body; // Mendapatkan nama kategori dari body request
       let resultCategory = await Category.create({
-        name,
+        // Membuat kategori baru di database
+        name, // Menyimpan nama kategori
       });
-      res.json(resultCategory);
-      //   res.redirect("/categories");
+      res.json(resultCategory); // Mengirimkan respon dalam format JSON berisi data kategori yang baru dibuat
     } catch (err) {
-      res.send(err);
+      // Blok catch untuk menangani error jika terjadi
+      res.send(err); // Mengirimkan error sebagai respon
     }
   }
 
   static async delete(req, res) {
+    // Metode statis untuk menghapus kategori berdasarkan id
     try {
-      const id = +req.params.id;
+      // Blok try untuk menangani eksekusi kode yang mungkin menghasilkan error
+      const id = +req.params.id; // Mendapatkan id dari parameter request dan mengubahnya menjadi tipe number
       let resultCategory = await Category.destroy({
+        // Menghapus kategori dari database
         where: {
-          id,
+          id, // Kondisi penghapusan berdasarkan id
         },
       });
-      resultCategory === 1
-        ? res.redirect("/categories")
-        : res.send(`Category with ID ${id} has noot been deleted`);
+      resultCategory === 1 // Memeriksa apakah kategori berhasil dihapus
+        ? res.redirect("/categories") // Mengarahkan ke halaman /categories jika berhasil dihapus
+        : res.send(`Category with ID ${id} has not been deleted`); // Mengirimkan pesan jika kategori tidak ditemukan
     } catch (err) {
-      res.send(err);
+      // Blok catch untuk menangani error jika terjadi
+      res.send(err); // Mengirimkan error sebagai respon
     }
   }
 
   static updatePage(req, res) {
-    const id = +req.params.id;
+    // Metode statis untuk menampilkan halaman edit kategori
+    const id = +req.params.id; // Mendapatkan id dari parameter request dan mengubahnya menjadi tipe number
     if (isNaN(id)) {
-      return res.status(400).send("Invalid ID");
+      // Memeriksa apakah id adalah angka
+      return res.status(400).send("Invalid ID"); // Mengirimkan respon 400 jika id tidak valid
     }
 
     Category.findOne({
+      // Mencari satu kategori berdasarkan id
       where: {
-        id: id,
+        id: id, // Kondisi pencarian berdasarkan id
       },
     })
       .then((categories) => {
-        res.render("categories/editCategory", { categories });
+        // Jika berhasil menemukan kategori
+        res.render("categories/editCategory", { categories }); // Merender halaman editCategory dengan data kategori
       })
       .catch((err) => {
-        res.send(err);
+        // Jika terjadi error
+        res.send(err); // Mengirimkan error sebagai respon
       });
   }
 
   static async update(req, res) {
+    // Metode statis untuk mengupdate kategori berdasarkan id
     try {
-      const id = +req.params.id;
-      const { name } = req.body;
+      // Blok try untuk menangani eksekusi kode yang mungkin menghasilkan error
+      const id = +req.params.id; // Mendapatkan id dari parameter request dan mengubahnya menjadi tipe number
+      const { name } = req.body; // Mendapatkan nama kategori dari body request
       let resultCategory = await Category.update(
+        // Mengupdate kategori di database
         {
-          name,
+          name, // Menyimpan nama kategori
         },
         {
           where: {
-            id,
+            id, // Kondisi pengupdatean berdasarkan id
           },
         }
       );
-      // res.redirect("/categories");
-      res.send(resultCategory);
+      res.send(resultCategory); // Mengirimkan respon berisi hasil pengupdatean
     } catch (err) {
-      res.send(err);
+      // Blok catch untuk menangani error jika terjadi
+      res.send(err); // Mengirimkan error sebagai respon
     }
-    const { name } = req.body;
+    const { name } = req.body; // Baris ini seharusnya tidak diperlukan, karena sudah ada di atas
   }
 }
-module.exports = CategoryController;
+module.exports = CategoryController; // Mengekspor kelas CategoryController
