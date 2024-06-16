@@ -22,6 +22,7 @@ class _EditFormUserState extends State<EditFormUser> {
   void initState() {
     // Metode yang dipanggil saat state diinisialisasi
     super.initState();
+    context.read<UserProvider>().clearSelectedImage();
     context
         .read<UserProvider>()
         .detailUser(widget.id); // Memuat detail pengguna saat inisialisasi

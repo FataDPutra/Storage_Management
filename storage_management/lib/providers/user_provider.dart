@@ -196,6 +196,11 @@ class UserProvider extends ChangeNotifier {
     passwordController.clear(); // Bersihkan passwordController
     imageController.clear(); // Bersihkan imageController
   }
+
+  void clearSelectedImage() {
+    selectedImage = null;
+    notifyListeners();
+  }
 }
 
 // Enum untuk merepresentasikan berbagai state untuk proses pengguna
